@@ -1,8 +1,6 @@
 input_files/*
-!input_files/.gitkeep
-
 output_files/*
-!output_files/.gitkeep
+
 
 /venvvideocompressionvmaf
 
