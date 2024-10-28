@@ -1,7 +1,4 @@
-# Ignore all files in the output_files directory
-
-
-# Ignore all files in the input_files directory
 input_files/*
-
 output_files/*
+/venvvideocompressionvmaf
+
