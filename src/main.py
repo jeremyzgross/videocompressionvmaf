@@ -22,6 +22,7 @@ file_chosen = tkinter.filedialog.askopenfilename(title="Select a file")
 
 
 def analyze_file(file_path):
+  ideal_vmaf_score = False
   crf_value = 40
   file_name, file_extension = os.path.splitext(os.path.basename(file_path))
   output_files_name = f"{file_name}_output_{crf_value}{file_extension}"
@@ -29,15 +30,27 @@ def analyze_file(file_path):
   raw_ffmpeg_cmd_line = f"ffmpeg -i {file_path} -c:v libx264 -crf {crf_value} -preset fast -y {full_output_path}"
   subprocess.run(raw_ffmpeg_cmd_line, shell=True)
 
-  vmaf_cmd = f"ffmpeg -i {file_path} -i {full_output_path} -lavfi libvmaf -f null -"
-  subprocess.run(vmaf_cmd, shell=True)
-  vmaf_output = subprocess.check_output(vmaf_cmd, shell=True, stderr=subprocess.STDOUT).decode()
-  vmaf_score = 0
-  for line in vmaf_output.split('\n'):
-    if "VMAF score:" in line:
-      vmaf_score = float(line.split(":")[-1].strip())
-      print(f"VMAF score HERE: {vmaf_score}")
-  os.remove(full_output_path)
+  while not ideal_vmaf_score:
+    vmaf_cmd = f"ffmpeg -i {file_path} -i {full_output_path} -lavfi libvmaf -f null -"
+    subprocess.run(vmaf_cmd, shell=True)
+    vmaf_output = subprocess.check_output(vmaf_cmd, shell=True, stderr=subprocess.STDOUT).decode()
+    vmaf_score = 0
+
+    for line in vmaf_output.split('\n'):
+      if "VMAF score:" in line:
+        vmaf_score = float(line.split(":")[-1].strip())
+        print(f"VMAF score HERE: {vmaf_score}")
+    os.remove(full_output_path)
+
+    if vmaf_score < 80:
+      crf_value -= 1
+      output_files_name = f"{file_name}_output_{crf_value}{file_extension}"
+      full_output_path = os.path.join(output_files_dir, output_files_name)
+      raw_ffmpeg_cmd_line = f"ffmpeg -i {file_path} -c:v libx264 -crf {crf_value} -preset fast -y {full_output_path}"
+      subprocess.run(raw_ffmpeg_cmd_line, shell=True)
+    else:
+      ideal_vmaf_score = True
+      print(f"Final VMAF score: {vmaf_score}, Final CRF value: {crf_value}")
 
 
 analyze_file(file_chosen)
